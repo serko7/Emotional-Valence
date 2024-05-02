@@ -277,6 +277,43 @@
     </div>
 
     <script>
+        // Consolidated function to save all study data
+        function saveStudyData() {
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            const occupation = document.getElementById('occupation').value;
+            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
+            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
+
+            const participantInfo = {
+                age: age,
+                gender: gender,
+                occupation: occupation,
+                shoppingFrequency: shoppingFrequency,
+                mouseUsage: mouseUsage
+            };
+
+            const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
+            const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
+
+            const studyData = {
+                participantInfo: participantInfo,
+                likertScaleResponse: likertScaleResponse,
+                mouseMovementData: mouseMovementData,
+                clicks: clicks,
+                scrolls: scrolls
+            };
+
+            localStorage.setItem('studyData', JSON.stringify(studyData));
+
+            console.log('Study data saved:', studyData);
+        }
+
+        // Initialize arrays to store data
+        let mouseMovementData = [];
+        let clicks = [];
+        let scrolls = [];
+
         // Function to add participant data to the array
         function addParticipantData() {
             const age = document.getElementById('age').value;
@@ -297,6 +334,14 @@
 
             // Scrolls data for the current product
             const scrollsData = JSON.stringify([...scrolls]);
+
+            // Console log statements for verification
+            console.log('Participant Information:', participantInfo);
+            console.log('Likert Scale Response:', likertScaleResponse);
+            console.log('Mouse Movement Data:', mouseMovementData);
+            console.log('Clicks Data:', clicks);
+            console.log('Scrolls Data:', scrolls);
+
 
             // Create an object with all the collected data
             const participantInfo = {
@@ -336,16 +381,15 @@
         }
 
         // Remove the existing event listener for form submission
-        document.getElementById('participantInfoForm').removeEventListener('submit', saveStudyData);
+        document.getElementById('participantInfoForm').removeEventListener('submit', addParticipantData);
 
         // Add event listener for the submission of the participant information form
         document.getElementById('participantInfoForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent the form from submitting traditionally
 
-            // Call the function to add participant data
-            addParticipantData();
+            // Call the function to save study data
+            saveStudyData();
         });
-
 
         // Function to track mouse movement and store coordinates
         function trackMouseMovement(event) {
@@ -597,38 +641,6 @@
                 modal.style.display = "none";
             }
         };
-
-        // Consolidated function to save all study data
-        function saveStudyData() {
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const occupation = document.getElementById('occupation').value;
-            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
-            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
-
-            const participantInfo = {
-                age: age,
-                gender: gender,
-                occupation: occupation,
-                shoppingFrequency: shoppingFrequency,
-                mouseUsage: mouseUsage
-            };
-
-            const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
-            const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
-
-            const studyData = {
-                participantInfo: participantInfo,
-                likertScaleResponse: likertScaleResponse,
-                mouseMovementData: mouseMovementData,
-                clicks: clicks,
-                scrolls: scrolls
-            };
-
-            localStorage.setItem('studyData', JSON.stringify(studyData));
-
-            console.log('Study data saved:', studyData);
-        }
     </script>
 </body>
 </html>
