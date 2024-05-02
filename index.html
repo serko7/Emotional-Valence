@@ -159,7 +159,7 @@
         </p>
         <button onclick="showParticipantInfo()" style="margin-bottom: 30px;">Continue</button>
     </div>
-        
+
     <!-- Participant Information Form -->
     <div id="participantInfoPage" class="container hidden">
         <h2>Participant Information</h2>
@@ -314,82 +314,47 @@
         let clicks = [];
         let scrolls = [];
 
-        // Function to add participant data to the array
-        function addParticipantData() {
+        // Function to save all study data
+        function saveStudyData() {
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
             const occupation = document.getElementById('occupation').value;
             const shoppingFrequency = document.getElementById('shoppingFrequency').value;
             const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
 
-            // Likert scale response for the current product
-            const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
-            const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
-
-            // Mouse movement data for the current product
-            const mouseMovementData = JSON.stringify([...mouseMovementData]);
-
-            // Clicks data for the current product
-            const clicksData = JSON.stringify([...clicks]);
-
-            // Scrolls data for the current product
-            const scrollsData = JSON.stringify([...scrolls]);
-
-            // Console log statements for verification
-            console.log('Participant Information:', participantInfo);
-            console.log('Likert Scale Response:', likertScaleResponse);
-            console.log('Mouse Movement Data:', mouseMovementData);
-            console.log('Clicks Data:', clicks);
-            console.log('Scrolls Data:', scrolls);
-
-
-            // Create an object with all the collected data
             const participantInfo = {
                 age: age,
                 gender: gender,
                 occupation: occupation,
                 shoppingFrequency: shoppingFrequency,
-                mouseUsage: mouseUsage,
-                likertScaleResponse: likertScaleResponse,
-                mouseMovementData: mouseMovementData,
-                clicksData: clicksData,
-                scrollsData: scrollsData
+                mouseUsage: mouseUsage
             };
 
-            // Add participant data to the array
-            participantData.push(participantInfo);
+            const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
+            const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
 
-            // Update the CSV file
-            updateCSVFile();
+            const currentProductIndex = currentIndex;
+            const productResponse = hasSeenProduct ? (likertScaleResponse !== null ? likertScaleResponse : "No response") : "Not interacted";
+
+            const studyData = {
+                participantInfo: participantInfo,
+                productResponse: productResponse,
+                emotionalResponse: likertScaleResponse,
+                mouseMovementData: mouseMovementData,
+                clicks: clicks,
+                scrolls: scrolls
+            };
+
+            // Save studyData to local storage
+            localStorage.setItem('studyData', JSON.stringify(studyData));
+
+            // Clear arrays for next set of data
+            mouseMovementData = [];
+            clicks = [];
+            scrolls = [];
+
+            console.log('Study data saved:', studyData);
         }
-
-        // Function to update the CSV file with participant data
-        function updateCSVFile() {
-            let csvContent = 'Age,Gender,Occupation,Shopping Frequency,Mouse Usage,Likert Scale Response,Mouse Movement Data,Clicks Data,Scrolls Data\n';
-            participantData.forEach((participant) => {
-                csvContent += `${participant.age},${participant.gender},${participant.occupation},${participant.shoppingFrequency},${participant.mouseUsage},${participant.likertScaleResponse},${participant.mouseMovementData},${participant.clicksData},${participant.scrollsData}\n`;
-            });
-
-            // Create a Blob object with the CSV content
-            const csvFile = new Blob([csvContent], { type: 'text/csv' });
-
-            // Create a temporary link element to trigger the download
-            const downloadLink = document.createElement('a');
-            downloadLink.href = window.URL.createObjectURL(csvFile);
-            downloadLink.download = 'study_data.csv';
-            downloadLink.click();
-        }
-
-        // Remove the existing event listener for form submission
-        document.getElementById('participantInfoForm').removeEventListener('submit', addParticipantData);
-
-        // Add event listener for the submission of the participant information form
-        document.getElementById('participantInfoForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the form from submitting traditionally
-
-            // Call the function to save study data
-            saveStudyData();
-        });
 
         // Function to track mouse movement and store coordinates
         function trackMouseMovement(event) {
