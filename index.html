@@ -123,10 +123,49 @@
         .hidden {
             display: none;
         }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+    
+        .radio-group {
+            margin-top: 10px;
+        }
+
+        .likert-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .likert-options {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .likert-options label {
+            margin: 0 10px;
+        }
+
+        .button, .likert-submit {
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #2196F3;
+            color: white;
+            width: 120px;
+            align-self: flex-start;
+        }
     </style>
 </head>
 <body>
-    <!-- Letter of Information -->
+    <!-- Information Letter Section -->
     <div id="explanationPage" class="container">
         <h2>Information Letter</h2>
         <p><strong>Predicting Emotional Valence: Unveiling User Emotions through Mouse Movement Analysis in E-commerce</strong></p>
@@ -160,7 +199,7 @@
         <button onclick="showParticipantInfo()" style="margin-bottom: 30px;">Continue</button>
     </div>    
 
-    <!-- Participant Information Form -->
+    <!-- Participant Information Form Section -->
     <div id="participantInfoPage" class="container hidden">
         <h2>Participant Information</h2>
         <form id="participantInfoForm">
@@ -227,40 +266,7 @@
         </form>
     </div>
     
-    <script>
-        // Function to validate the participant information form
-        function validateForm() {
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const occupation = document.getElementById('occupation').value;
-            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
-            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
-    
-            if (age && gender && occupation && shoppingFrequency && mouseUsage) {
-                if (mouseUsage === 'no') {
-                    alert('You cannot participate in the study if you do not currently use a computer mouse or similar pointing device.');
-                    return;
-                }
-                document.getElementById('participantInfoPage').classList.add('hidden');
-                document.getElementById('studyContent').classList.remove('hidden');
-                showNextProduct();
-            } else {
-                alert('Please fill in all fields.');
-            }
-        }
-    </script>
-    
-    <style>
-        .form-group {
-            margin-bottom: 20px;
-        }
-    
-        .radio-group {
-            margin-top: 10px;
-        }
-    </style>
-
-    <!-- Study Content (hidden initially) -->
+    <!-- Study Content Section -->
     <div id="studyContent" class="container hidden">
         <div class="header">Would you buy this product?</div>
         <p style="margin-left: 20px;">Click on the button to see the product.</p>
@@ -276,11 +282,54 @@
         <button class="show-picture" onclick="showPicture()">Show Picture</button>
     </div>
 
+    <!-- Likert Scale Page Section -->
+    <div id="likertPage" class="container hidden">
+        <div class="header">Please rate your emotional response to the product:</div>
+        <div class="likert-container">
+            <div class="likert-options">
+                <label><input type="radio" name="likertScale" value="1"> Very Negative</label>
+                <label><input type="radio" name="likertScale" value="2"> Negative</label>
+                <label><input type="radio" name="likertScale" value="3"> Neutral</label>
+                <label><input type="radio" name="likertScale" value="4"> Positive</label>
+                <label><input type="radio" name="likertScale" value="5"> Very Positive</label>
+            </div>
+            <button class="button likert-submit" onclick="submitLikertScale()">Submit</button>
+        </div>
+    </div>
+
+    <!-- Debriefing Letter Section -->
+    <div id="debriefingPage" class="container hidden">
+        <h2>Debriefing Letter</h2>
+        <p><strong>Predicting Emotional Valence: Unveiling User Emotions through Mouse Movement Analysis in E-commerce</strong></p>
+        <p>Thank you for participating!</p>
+        <p>This study aims to investigate the relationship between mouse movements and emotional valence during online shopping experiences. By participating, you contributed to advancing our understanding of how users' emotions influence their interactions on e-commerce platforms.</p>
+        <p>The next steps of the thesis involve processing the raw data collected during the study. This includes computing features such as movement duration, traveled distance, velocity, clicks, and other relevant metrics from the mouse movement data.</p>
+        <p>Once the features are computed, we will proceed to build machine learning models to analyze the data and gain insights into the emotional nuances of online shoppers. This analysis will help us understand how different mouse movement patterns correlate with users' emotional valence during online shopping.</p>
+        <p>If you have any further questions or concerns about the study, feel free to contact us using the details provided below.</p>
+        <p><strong>Contact Details:</strong></p>
+        <p>Serkan Offermann (Student at University of Cologne / M.Sc.) - <a href="mailto:mofferm2@uni-koeln.de">mofferm2@uni-koeln.de</a><br>
+        Christopher Coors (Doctoral Researcher / Supervisor) - <a href="mailto:coors@wiso.uni-koeln.de">coors@wiso.uni-koeln.de</a></p>
+        <p><button id="finishButton" onclick="saveStudyDataAndClose()">Finish</button></p>
+        <p><strong>Note:</strong> Clicking the finish button marks the completion of your participation in this study. Your data will now be securely stored and analyzed. Thank you for your contribution!</p>
+    </div>
+
+    <!-- Modal for displaying larger image -->
+    <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content">
+            <img id="modalImg" src="" alt="Product Image">
+        </div>
+    </div>
+
+    <!-- JavaScript Section -->
     <script>
+
         // Initialize arrays to store data
-        let mouseMovementData = [];
-        let clicks = [];
-        let scrolls = [];
+        let participantsData = [];
+        let mouseMovementData = []; 
+        let clicks = []; 
+        let scrolls = []; 
+        let currentProductResponse = null;
 
         // Function to save all study data
         function saveStudyData() {
@@ -301,59 +350,77 @@
             const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
             const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
 
-            const currentProductIndex = currentIndex;
-            const productResponse = hasSeenProduct ? (likertScaleResponse !== null ? likertScaleResponse : "No response") : "Not interacted";
-
             const studyData = {
                 participantInfo: participantInfo,
-                productResponse: productResponse,
-                emotionalResponse: likertScaleResponse,
+                likertScaleResponse: likertScaleResponse,
                 mouseMovementData: mouseMovementData,
                 clicks: clicks,
-                scrolls: scrolls
+                scrolls: scrolls,
+                productResponse: currentProductResponse // Include product response
             };
 
-            // Save studyData to local storage
-            localStorage.setItem('studyData', JSON.stringify(studyData));
-
-            // Clear arrays for next set of data
-            mouseMovementData = [];
-            clicks = [];
-            scrolls = [];
+            // Add the study data to the participantsData array
+            participantsData.push(studyData);
 
             console.log('Study data saved:', studyData);
         }
 
-        // Function to track mouse movement and store coordinates
+        // Function to convert data to CSV format
+        function convertToCSV(data) {
+            const header = Object.keys(data[0]).join(',');
+            const body = data.map(entry => Object.values(entry).join(',')).join('\n');
+            return `${header}\n${body}`;
+        }
+
+        // Function to save CSV file
+        function saveCSV() {
+            const csvData = convertToCSV(participantsData);
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'study_data.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Function to track mouse movement when participant interacts with the product
         function trackMouseMovement(event) {
-            const coordinates = {
-                x: event.clientX,
-                y: event.clientY,
-                timestamp: Date.now()
-            };
-            // Store the coordinates in the mouseMovementData array
-            mouseMovementData.push(coordinates);
+            if (!document.getElementById('studyContent').classList.contains('hidden')) {
+                const coordinates = {
+                    x: event.clientX,
+                    y: event.clientY,
+                    timestamp: Date.now()
+                };
+                // Store the coordinates in the mouseMovementData array
+                mouseMovementData.push(coordinates);
+            }
         }
 
         // Function to handle mouse click events
         function handleMouseClick(event) {
-            const click = {
-                timestamp: Date.now(),
-                x: event.clientX,
-                y: event.clientY,
-                button: event.button // 0 for left button, 1 for middle button, 2 for right button
-            };
-            clicks.push(click);
+            if (!document.getElementById('studyContent').classList.contains('hidden')) {
+                const click = {
+                    timestamp: Date.now(),
+                    x: event.clientX,
+                    y: event.clientY,
+                    button: event.button // 0 for left button, 1 for middle button, 2 for right button
+                };
+                clicks.push(click);
+            }
         }
 
         // Function to handle scroll events
         function handleScroll(event) {
-            const scroll = {
-                timestamp: Date.now(),
-                direction: event.deltaY > 0 ? 'down' : 'up',
-                distance: Math.abs(event.deltaY)
-            };
-            scrolls.push(scroll);
+            if (!document.getElementById('studyContent').classList.contains('hidden')) {
+                const scroll = {
+                    timestamp: Date.now(),
+                    direction: event.deltaY > 0 ? 'down' : 'up',
+                    distance: Math.abs(event.deltaY)
+                };
+                scrolls.push(scroll);
+            }
         }
 
         // Adding event listeners for mouse clicks, scroll events, and mouse movement
@@ -361,72 +428,47 @@
         document.addEventListener('wheel', handleScroll);
         document.addEventListener('mousemove', trackMouseMovement);
 
-        // Function to show the next product in the study
-        function showNextProduct() {
-            updateProduct();
-            hideProductImage();
-            enableButtons(false);
-            hasSeenProduct = false;
+        // Function to validate the participant information form
+        function validateForm() {
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            const occupation = document.getElementById('occupation').value;
+            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
+            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
+    
+            if (age && gender && occupation && shoppingFrequency && mouseUsage) {
+                if (mouseUsage === 'no') {
+                    alert('You cannot participate in the study if you do not currently use a computer mouse or similar pointing device.');
+                    return;
+                }
+                document.getElementById('participantInfoPage').classList.add('hidden');
+                document.getElementById('studyContent').classList.remove('hidden');
+                showNextProduct();
+            } else {
+                alert('Please fill in all fields.');
+            }
         }
 
-        function showPicture() {
-            const productImg = document.querySelector('.current-product');
-            productImg.style.display = 'block';
-            hasSeenProduct = true;
-            enableButtons(true);
-        }
-    </script>
+        let currentIndex = 0;
+        let hasSeenProduct = false;
 
-    <!-- Likert Scale Page (hidden initially) -->
-    <div id="likertPage" class="container hidden">
-        <div class="header">Please rate your emotional response to the product:</div>
-        <div class="likert-container">
-            <div class="likert-options">
-                <label><input type="radio" name="likertScale" value="1"> Very Negative</label>
-                <label><input type="radio" name="likertScale" value="2"> Negative</label>
-                <label><input type="radio" name="likertScale" value="3"> Neutral</label>
-                <label><input type="radio" name="likertScale" value="4"> Positive</label>
-                <label><input type="radio" name="likertScale" value="5"> Very Positive</label>
-            </div>
-            <button class="button likert-submit" onclick="submitLikertScale()">Submit</button>
-        </div>
-    </div>
-
-    <style>
-        .likert-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
+        function showParticipantInfo() {
+            document.getElementById('explanationPage').classList.add('hidden');
+            document.getElementById('participantInfoPage').classList.remove('hidden');
         }
 
-        .likert-options {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+        // Event listener for the submission of the participant information form
+        document.getElementById('participantInfoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var age = document.getElementById('age').value;
+            var gender = document.getElementById('gender').value;
+            var occupation = document.getElementById('occupation').value;
 
-        .likert-options label {
-            margin: 0 10px;
-        }
+            document.getElementById('participantInfoPage').classList.add('hidden');
+            document.getElementById('studyContent').classList.remove('hidden');
+            showNextProduct();
+        });
 
-        .button, .likert-submit {
-            padding: 10px 20px;
-            margin-bottom: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #2196F3;
-            color: white;
-            width: 120px;
-            align-self: flex-start;
-        }
-
-    </style>
-
-    <script>
         // Function to handle button click (Yes or No)
         function handleButtonClick(isYes) {
             if (hasSeenProduct) {
@@ -451,8 +493,6 @@
                     document.querySelectorAll('input[name="likertScale"]').forEach(function(radio) {
                         radio.checked = false;
                     });
-                    // Save study data
-                    saveStudyData(); // <-- Call saveStudyData() here
                     // Hide the Likert scale after submitting
                     document.getElementById('likertPage').classList.add('hidden');
                     document.getElementById('studyContent').classList.remove('hidden');
@@ -461,69 +501,15 @@
                 alert('Please select a value on the Likert scale before submitting.');
             }
         }
-    </script>
 
-    <!-- Debriefing Letter -->
-    <div id="debriefingPage" class="container hidden">
-        <h2>Debriefing Letter</h2>
-        <p><strong>Predicting Emotional Valence: Unveiling User Emotions through Mouse Movement Analysis in E-commerce</strong></p>
-        <p>Thank you for participating!</p>
-        <p>This study aims to investigate the relationship between mouse movements and emotional valence during online shopping experiences. By participating, you contributed to advancing our understanding of how users' emotions influence their interactions on e-commerce platforms.</p>
-        <p>The next steps of the thesis involve processing the raw data collected during the study. This includes computing features such as movement duration, traveled distance, velocity, clicks, and other relevant metrics from the mouse movement data.</p>
-        <p>Once the features are computed, we will proceed to build machine learning models to analyze the data and gain insights into the emotional nuances of online shoppers. This analysis will help us understand how different mouse movement patterns correlate with users' emotional valence during online shopping.</p>
-        <p>If you have any further questions or concerns about the study, feel free to contact us using the details provided below.</p>
-        <p><strong>Contact Details:</strong></p>
-        <p>Serkan Offermann (Student at University of Cologne / M.Sc.) - <a href="mailto:mofferm2@uni-koeln.de">mofferm2@uni-koeln.de</a><br>
-        Christopher Coors (Doctoral Researcher / Supervisor) - <a href="mailto:coors@wiso.uni-koeln.de">coors@wiso.uni-koeln.de</a></p>
-        <p><button id="finishButton" onclick="saveStudyDataAndClose()">Finish</button></p>
-        <p><strong>Note:</strong> Clicking the finish button marks the completion of your participation in this study. Your data will now be securely stored and analyzed. Thank you for your contribution!</p>
-
-        <!-- Script to dynamically add the "Finish" button -->
-        <script>
-            // Get the finishing button
-            const finishButton = document.getElementById('finishButton');
+        // Get the finishing button
+        const finishButton = document.getElementById('finishButton');
 
         // Function to save study data to local storage and close the website
         function saveStudyDataAndClose() {
             saveStudyData(); // Save study data
             window.close(); // Close the website
         }
-
-        // Add event listener to the finishing button to save study data and close the website
-        finishButton.addEventListener('click', function() {
-            saveStudyDataAndClose();
-        });
-        </script>
-    </div>
-
-    <!-- Modal for displaying larger image -->
-    <div id="myModal" class="modal">
-        <span class="close">&times;</span>
-        <div class="modal-content">
-            <img id="modalImg" src="" alt="Product Image">
-        </div>
-    </div>
-
-    <script>
-        let currentIndex = 0;
-        let hasSeenProduct = false;
-
-        function showParticipantInfo() {
-            document.getElementById('explanationPage').classList.add('hidden');
-            document.getElementById('participantInfoPage').classList.remove('hidden');
-        }
-
-        // Event listener for the submission of the participant information form
-        document.getElementById('participantInfoForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            var age = document.getElementById('age').value;
-            var gender = document.getElementById('gender').value;
-            var occupation = document.getElementById('occupation').value;
-
-            document.getElementById('participantInfoPage').classList.add('hidden');
-            document.getElementById('studyContent').classList.remove('hidden');
-            showNextProduct();
-        });
 
         const productImages = [
             "product1-kosmetik.jpg",
@@ -543,6 +529,21 @@
             "product15-spielzeug.jpg",
             "product16-handmade.jpg"
         ];
+
+        // Function to show the next product in the study
+        function showNextProduct() {
+            updateProduct();
+            hideProductImage();
+            enableButtons(false);
+            hasSeenProduct = false;
+        }
+
+        function showPicture() {
+            const productImg = document.querySelector('.current-product');
+            productImg.style.display = 'block';
+            hasSeenProduct = true;
+            enableButtons(true);
+        }
 
         function updateProduct() {
             const productImg = document.querySelector('.current-product');
@@ -574,40 +575,7 @@
                 modal.style.display = "none";
             }
         };
-
-        // Consolidated function to save all study data
-        function saveStudyData() {
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const occupation = document.getElementById('occupation').value;
-            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
-            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
-
-            const participantInfo = {
-                age: age,
-                gender: gender,
-                occupation: occupation,
-                shoppingFrequency: shoppingFrequency,
-                mouseUsage: mouseUsage
-            };
-
-            const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
-            const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
-
-            const studyData = {
-                participantInfo: participantInfo,
-                likertScaleResponse: likertScaleResponse,
-                mouseMovementData: mouseMovementData,
-                clicks: clicks,
-                scrolls: scrolls
-            };
-
-            localStorage.setItem('studyData', JSON.stringify(studyData));
-
-            console.log('Study data saved:', studyData);
-        }
+        
     </script>
 </body>
 </html>
-
-
