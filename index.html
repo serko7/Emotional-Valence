@@ -508,9 +508,12 @@
         // Function to save study data to local storage and close the website
         function saveStudyDataAndClose() {
             saveStudyData(); // Save study data
-            window.close(); // Close the website
+            const closed = window.close(); // Attempt to close the website
+            if (!closed) {
+                alert('Thank you for participating! You can now close this window.');
+            }
         }
-
+        
         const productImages = [
             "product1-kosmetik.jpg",
             "product2-fashion.jpg",
