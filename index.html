@@ -326,13 +326,16 @@
 
         // Initialize arrays to store data
         let participantsData = [];
-        let mouseMovementData = []; 
-        let clicks = []; 
-        let scrolls = []; 
-        let currentProductResponse = null;
+        let clicks = []; // Initialize clicks array
+        let mouseMovementData = []; // Initialize mouseMovementData array
+        let scrolls = []; // Initialize scrolls array
+        let productResponses = []; // Initialize array for product responses
+        let likertScaleResponses = []; // Initialize array for Likert scale responses
 
         // Function to save all study data
         function saveStudyData() {
+            const participantId = generateParticipantId();
+            const timestamp = new Date().toISOString();
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
             const occupation = document.getElementById('occupation').value;
@@ -340,6 +343,7 @@
             const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
 
             const participantInfo = {
+                participantId: participantId,
                 age: age,
                 gender: gender,
                 occupation: occupation,
@@ -352,23 +356,40 @@
 
             const studyData = {
                 participantInfo: participantInfo,
-                likertScaleResponse: likertScaleResponse,
-                mouseMovementData: mouseMovementData,
-                clicks: clicks,
-                scrolls: scrolls,
-                productResponse: currentProductResponse // Include product response
+                productResponses: productResponses.slice(), // Clone arrays to prevent modification
+                likertScaleResponses: likertScaleResponses.slice(), // Clone arrays to prevent modification
+                mouseMovementData: mouseMovementData.slice(), // Clone arrays to prevent modification
+                clicks: clicks.slice(), // Clone arrays to prevent modification
+                scrolls: scrolls.slice() // Clone arrays to prevent modification
             };
 
-            // Add the study data to the participantsData array
-            participantsData.push(studyData);
+            // Get existing data from local storage or initialize as empty array
+            let storedData = JSON.parse(localStorage.getItem('participantsData')) || [];
+            // Append new data
+            storedData.push(studyData);
+            // Save updated data to local storage
+            localStorage.setItem('participantsData', JSON.stringify(storedData));
 
             console.log('Study data saved:', studyData);
         }
 
+        // Function to generate a random participant ID
+        function generateParticipantId() {
+            return 'PARTICIPANT_' + Math.floor(Math.random() * 1000);
+        }
+
         // Function to convert data to CSV format
         function convertToCSV(data) {
-            const header = Object.keys(data[0]).join(',');
-            const body = data.map(entry => Object.values(entry).join(',')).join('\n');
+            const header = 'ParticipantID,Age,Gender,Occupation,ShoppingFrequency,MouseUsage,LikertScaleResponse,ProductResponse,MouseMovementData,Clicks,Scrolls';
+            const body = data.map(entry => {
+                const participantInfo = Object.values(entry.participantInfo).join(',');
+                const likertScaleResponse = entry.likertScaleResponse || '';
+                const productResponses = entry.productResponses.join(',');
+                const mouseMovementData = JSON.stringify(entry.mouseMovementData);
+                const clicks = JSON.stringify(entry.clicks);
+                const scrolls = JSON.stringify(entry.scrolls);
+                return `${participantInfo},${likertScaleResponse},"${productResponses}","${mouseMovementData}","${clicks}","${scrolls}"`;
+            }).join('\n');
             return `${header}\n${body}`;
         }
 
@@ -387,6 +408,7 @@
 
         // Function to track mouse movement when participant interacts with the product
         function trackMouseMovement(event) {
+            // Check if the user is in the studyContent section
             if (!document.getElementById('studyContent').classList.contains('hidden')) {
                 const coordinates = {
                     x: event.clientX,
@@ -423,13 +445,31 @@
             }
         }
 
+        // Function to handle button click (Yes or No)
+        function handleButtonClick(isYes) {
+            if (hasSeenProduct) {
+                // Show the Likert scale after clicking Yes or No
+                document.getElementById('likertPage').classList.remove('hidden');
+                document.getElementById('studyContent').classList.add('hidden');
+                const response = isYes ? 'Yes' : 'No';
+                productResponses.push(response); // Store participant's response for the current product
+            }
+        }
+
         // Adding event listeners for mouse clicks, scroll events, and mouse movement
         document.addEventListener('click', handleMouseClick);
         document.addEventListener('wheel', handleScroll);
         document.addEventListener('mousemove', trackMouseMovement);
 
+        // Function to clear all study data
+        function clearStudyData() {
+            participantsData = []; // Reset participantsData array
+            console.log('Study data cleared.');
+        }
+
         // Function to validate the participant information form
         function validateForm() {
+            clearStudyData(); // Uncomment this line to clear existing data before starting a new test
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
             const occupation = document.getElementById('occupation').value;
