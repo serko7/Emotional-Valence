@@ -162,13 +162,23 @@
             width: 120px;
             align-self: flex-start;
         }
+
+        .logo {
+            position: absolute;
+            top: 0;
+            right: 0;
+            max-width: 200px;
+            margin-top: 10px;
+            margin-right: 20px;
+        }
     </style>
 </head>
 <body>
     <!-- Information Letter Section -->
     <div id="explanationPage" class="container">
-        <h2>Information Letter</h2>
-        <p><strong>Predicting Emotional Valence: Unveiling User Emotions through Mouse Movement Analysis in E-commerce</strong></p>
+        <h2>Information Letter: Predicting Emotional Valence</h2>
+        <!-- Add the image tag for the university logo -->
+        <img src="UzK_Logo.jpg" alt="University Logo" class="logo">
 
         <p><strong>Purpose:</strong><br>
             Welcome to our study on predicting emotional valence during online shopping experiences. Your honest and genuine feedback is essential for us to accurately understand user emotions and improve the online shopping experience, contributing to the field of Human-Computer Interaction (HCI).
@@ -183,7 +193,7 @@
         </p>
         
         <p><strong>Procedure:</strong><br>
-            As a participant, you will be asked to browse through an online shopping simulation while your mouse movements are tracked. After interacting with each product, you will indicate your emotional response on a Likert scale. The study will take approximately 10 to 15 minutes to complete. Your participation is anonymous, and all data collected will be kept confidential.
+            As a participant, you will be asked to browse through an online shopping simulation. After interacting with each product, you will indicate your emotional response on a Likert scale. The study will take approximately 10 to 15 minutes to complete. Your participation is anonymous, and all data collected will be kept confidential.
         </p>
         
         <p><strong>Privacy:</strong><br>
@@ -301,6 +311,7 @@
     <!-- Debriefing Letter Section -->
     <div id="debriefingPage" class="container hidden">
         <h2>Debriefing Letter</h2>
+        <img src="UzK_Logo.jpg" alt="University Logo" class="logo">
         <p><strong>Predicting Emotional Valence: Unveiling User Emotions through Mouse Movement Analysis in E-commerce</strong></p>
         <p>Thank you for participating!</p>
         <p>This study aims to investigate the relationship between mouse movements and emotional valence during online shopping experiences. By participating, you contributed to advancing our understanding of how users' emotions influence their interactions on e-commerce platforms.</p>
@@ -365,6 +376,39 @@
             });
         }
 
+        // Event listeners for mouse movements and clicks
+        let mouseListenersAdded = false;
+
+        // Function to add mouse event listeners
+        function addMouseListeners() {
+            if (!mouseListenersAdded) {
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('click', handleMouseClick);
+                document.addEventListener('drag', handleDrag);
+                mouseListenersAdded = true;
+            }
+        }
+
+        // Function to remove mouse event listeners
+        function removeMouseListeners() {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('click', handleMouseClick);
+            document.removeEventListener('drag', handleDrag);
+            mouseListenersAdded = false;
+        }
+
+        function handleMouseMove(event) {
+            writeMouseData(userId, 'move', event.clientX, event.clientY, Date.now(), currentIndex);
+        }
+
+        function handleMouseClick(event) {
+            writeMouseData(userId, 'click', event.clientX, event.clientY, Date.now(), currentIndex);
+        }
+
+        function handleDrag(event) {
+            writeMouseData(userId, 'drag', event.clientX, event.clientY, Date.now(), currentIndex);
+        }
+
         // Function to write form data to Firebase
         function writeFormData(userId, formId, formData) {
             const formDataRef = ref(db, `formData/${userId}`);
@@ -404,21 +448,13 @@
             writeFormData(userId, formId, data);
         }
 
-        // Event listeners for mouse movements and clicks
-        document.addEventListener('mousemove', (event) => {
-            writeMouseData(userId, 'move', event.clientX, event.clientY, Date.now(), currentIndex);
-        });
-
-        document.addEventListener('click', (event) => {
-            writeMouseData(userId, 'click', event.clientX, event.clientY, Date.now(), currentIndex);
-        });
-
-        document.addEventListener('drag', (event) => {
-            writeMouseData(userId, 'drag', event.clientX, event.clientY, Date.now(), currentIndex);
-        });
-
         const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
         const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
+
+        // Function to close the study window
+        function closeStudyWindow() {
+            window.close();
+        }
 
         // Function to validate the participant information form
         function validateForm() {
@@ -433,6 +469,7 @@
                     // Reset the radio button for mouse usage
                     document.querySelector('input[name="mouseUsage"]:checked').checked = false;
                     alert('You cannot participate in the study if you do not currently use a computer mouse or similar pointing device.');
+                    closeStudyWindow(); // Close the study window
                     return;
                 }
                 document.getElementById('participantInfoPage').classList.add('hidden');
@@ -493,6 +530,9 @@
                 // Show the Likert scale after clicking Yes or No
                 document.getElementById('likertPage').classList.remove('hidden');
                 document.getElementById('studyContent').classList.add('hidden');
+                
+                // Remove mouse event listeners when Likert scale page is displayed
+                removeMouseListeners();
             }
         }
 
@@ -500,7 +540,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const yesButton = document.querySelector('.button.yes');
             const noButton = document.querySelector('.button.no');
-            
+
             if (yesButton && noButton) {
                 yesButton.addEventListener('click', function() {
                     handleButtonClick(true);
@@ -536,6 +576,9 @@
                     // Hide the Likert scale after submitting
                     document.getElementById('likertPage').classList.add('hidden');
                     document.getElementById('studyContent').classList.remove('hidden');
+                    
+                    // Add mouse event listeners when showing the next product
+                    addMouseListeners();
                 }
             } else {
                 alert('Please select a value on the Likert scale before submitting.');
@@ -600,12 +643,14 @@
             hasSeenProduct = false;
         }
 
-        // Function to handle showing the product image and initializing mouseMovementData array
+        // Function to handle showing the product image and adding mouse event listeners
         function showPicture() {
             const productImg = document.querySelector('.current-product');
             productImg.style.display = 'block';
             hasSeenProduct = true;
 
+            // Add mouse event listeners only when the product image is shown
+            addMouseListeners();
             enableButtons(true);
         }
 
