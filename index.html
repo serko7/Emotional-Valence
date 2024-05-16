@@ -196,7 +196,7 @@
             Christopher Coors (Doctoral Researcher / Supervisor)<br>
             Email: coors@wiso.uni-koeln.de
         </p>
-        <button onclick="showParticipantInfo()" style="margin-bottom: 30px;">Continue</button>
+        <button id="continueButton" style="margin-bottom: 30px;">Continue</button>
     </div>    
 
     <!-- Participant Information Form Section -->
@@ -262,7 +262,7 @@
                 </fieldset>
             </div>
 
-            <button type="button" onclick="validateForm()">Start Study</button>
+            <button id="startButton">Start Study</button>
         </form>
     </div>
     
@@ -271,31 +271,32 @@
         <div class="header">Would you buy this product?</div>
         <p style="margin-left: 20px;">Click on the button to see the product.</p>
         <div class="buttons">
-            <button class="button yes" onclick="handleButtonClick(true)">Yes</button>
-            <button class="button no" onclick="handleButtonClick(false)">No</button>
+            <button class="button yes">Yes</button>
+            <button class="button no">No</button>
         </div>
         <div class="product-container">
             <div class="product-image">
                 <img src="" alt="Product Image" class="current-product">
             </div>
         </div>
-        <button class="show-picture" onclick="showPicture()">Show Picture</button>
+        <button id="showPictureButton" class="show-picture">Show Picture</button>
     </div>
 
-    <!-- Likert Scale Page Section -->
-    <div id="likertPage" class="container hidden">
-        <div class="header">Please rate your emotional response to the product:</div>
-        <div class="likert-container">
-            <div class="likert-options">
-                <label><input type="radio" name="likertScale" value="1"> Very Negative</label>
-                <label><input type="radio" name="likertScale" value="2"> Negative</label>
-                <label><input type="radio" name="likertScale" value="3"> Neutral</label>
-                <label><input type="radio" name="likertScale" value="4"> Positive</label>
-                <label><input type="radio" name="likertScale" value="5"> Very Positive</label>
+
+        <!-- Likert Scale Page Section -->
+        <div id="likertPage" class="container hidden">
+            <div class="header">Please rate your emotional response to the product:</div>
+            <div class="likert-container">
+                <div class="likert-options">
+                    <label><input type="radio" name="likertScale" value="1"> Very Negative</label>
+                    <label><input type="radio" name="likertScale" value="2"> Negative</label>
+                    <label><input type="radio" name="likertScale" value="3"> Neutral</label>
+                    <label><input type="radio" name="likertScale" value="4"> Positive</label>
+                    <label><input type="radio" name="likertScale" value="5"> Very Positive</label>
+                </div>
+                <button id="likertSubmitButton" class="button likert-submit">Submit</button>
             </div>
-            <button class="button likert-submit" onclick="submitLikertScale()">Submit</button>
         </div>
-    </div>
 
     <!-- Debriefing Letter Section -->
     <div id="debriefingPage" class="container hidden">
@@ -309,7 +310,7 @@
         <p><strong>Contact Details:</strong></p>
         <p>Serkan Offermann (Student at University of Cologne / M.Sc.) - <a href="mailto:mofferm2@uni-koeln.de">mofferm2@uni-koeln.de</a><br>
         Christopher Coors (Doctoral Researcher / Supervisor) - <a href="mailto:coors@wiso.uni-koeln.de">coors@wiso.uni-koeln.de</a></p>
-        <p><button id="finishButton" onclick="CloseStudy()">Finish</button></p>
+        <p><button id="finishButton">Finish</button></p>
         <p><strong>Note:</strong> Clicking the finish button marks the completion of your participation in this study. Your data will now be securely stored and analyzed. Thank you for your contribution!</p>
     </div>
 
@@ -321,289 +322,106 @@
         </div>
     </div>
 
-    <!-- JavaScript Section -->
-    <script>
+    <!-- JavaScript code -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+        import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        // Initialize participantInfo as null
-        let participantInfo = null;
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyD4HUK5kHiUAZxPzR544v4GQYdH-2ZSFCA",
+          authDomain: "master-thesis-25efd.firebaseapp.com",
+          databaseURL: "https://master-thesis-25efd-default-rtdb.europe-west1.firebasedatabase.app/",
+          projectId: "master-thesis-25efd",
+          storageBucket: "master-thesis-25efd.appspot.com",
+          messagingSenderId: "860945595569",
+          appId: "1:860945595569:web:935df630632592af763690"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getDatabase(app);
 
-        // Initialize participantsData array with productResponses and likertScaleResponses arrays for each participant
-        let participantsData = JSON.parse(localStorage.getItem('participantsData')) || [];
+        // Define participantInfo object
+        let participantInfo = {
+            productResponses: [],
+            likertScaleResponses: []
+        };
 
-        // Array to store mouse movement data
-        let mouseMovementData = [];
+        // Generate a unique user ID for this session
+        const userId = `user_${Math.random().toString(36).substring(2, 15)}`;
 
-        // Array to store click data
-        let clickData = [];
-
-        // Variable to store the timestamp when hover started
-        let hoverStartTime = null; 
-
-        // Variable to store the timestamp when dwell started
-        let dwellStartTime = null; 
-
-        // Variable to track whether the mouse is currently hovering over an element
-        let isHovering = false;
-
-        // Variable to track whether there's an active interaction with the element
-        let isActiveInteraction = false;
-
-        // Function to save all study data
-        function saveStudyData() {
-            const participantId = generateParticipantId();
-            const timestamp = new Date().toISOString();
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const occupation = document.getElementById('occupation').value;
-            const shoppingFrequency = document.getElementById('shoppingFrequency').value;
-            const mouseUsage = document.querySelector('input[name="mouseUsage"]:checked').value;
-
-            // Add mouse movement data to participantInfo for each product
-            for (let i = 0; i < mouseMovementData.length; i++) {
-                if (!participantInfo.mouseMovementData[i]) {
-                    participantInfo.mouseMovementData[i] = [];
-                }
-                participantInfo.mouseMovementData[i].push(...mouseMovementData[i]);
-            }
-
-            // Add click data to participantInfo for each product
-            for (let i = 0; i < clickData.length; i++) {
-                if (!participantInfo.clickData[i]) {
-                    participantInfo.clickData[i] = [];
-                }
-                participantInfo.clickData[i].push(...clickData[i]);
-            }
-
-            // Push participant info to participantsData array
-            participantsData.push(participantInfo);
-
-            // Save updated participantsData array to local storage
-            localStorage.setItem('participantsData', JSON.stringify(participantsData));
-
-            console.log('Participant data stored:', participantsData); // Log when participant data is stored
+        // Function to write mouse data to Firebase
+        function writeMouseData(userId, eventType, x, y, timeStamp, productIndex) {
+            const mouseDataRef = ref(db, `mouseData/${userId}/${productIndex}`);
+            const newDataRef = push(mouseDataRef);
+            set(newDataRef, {
+                eventType: eventType,
+                x: x,
+                y: y,
+                timeStamp: timeStamp
+            });
         }
+
+        // Function to write form data to Firebase
+        function writeFormData(userId, formId, formData) {
+            const formDataRef = ref(db, `formData/${userId}`);
+            set(formDataRef, {
+                formId: formId,
+                formData: formData,
+                timeStamp: Date.now()
+            });
+        }
+
+        // Function to write product response data to Firebase
+        function writeProductResponses(userId, productResponses) {
+            const productResponsesRef = ref(db, `productResponses/${userId}`);
+            set(productResponsesRef, {
+                productResponses: productResponses,
+                timeStamp: Date.now()
+            });
+        }
+
+        // Function to write likert scale data to Firebase
+        function writeLikertScaleResponses(userId, likertScaleResponses) {
+            const likertScaleResponsesRef = ref(db, `likertScaleResponses/${userId}`);
+            set(likertScaleResponsesRef, {
+                likertScaleResponses: likertScaleResponses,
+                timeStamp: Date.now()
+            });
+        }
+
+        // Function to capture form data
+        function captureFormData(formId) {
+            const form = document.getElementById(formId);
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            writeFormData(userId, formId, data);
+        }
+
+        // Event listeners for mouse movements and clicks
+        document.addEventListener('mousemove', (event) => {
+            writeMouseData(userId, 'move', event.clientX, event.clientY, Date.now(), currentIndex);
+        });
+
+        document.addEventListener('click', (event) => {
+            writeMouseData(userId, 'click', event.clientX, event.clientY, Date.now(), currentIndex);
+        });
+
+        document.addEventListener('drag', (event) => {
+            writeMouseData(userId, 'drag', event.clientX, event.clientY, Date.now(), currentIndex);
+        });
 
         const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
         const likertScaleResponse = likertScaleValue ? likertScaleValue.value : null;
 
-        // Function to generate a random participant ID
-        function generateParticipantId() {
-            return 'PARTICIPANT_' + Math.floor(Math.random() * 1000);
-        }
-
-        // Function to save CSV file
-        function saveCSV() {
-            // Convert participantsData to CSV format
-            const csvData = convertToCSV(participantsData);
-            if (csvData) {
-                const blob = new Blob([csvData], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.setAttribute('href', url);
-                a.setAttribute('download', 'participant_data.csv');
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                console.error('Error: CSV data is empty.');
-            }
-        }
-
-        // Function to convert data to CSV format
-        function convertToCSV(data) {
-            if (data.length === 0) {
-                return null; // Return null if there's no data
-            }
-
-            // Prepare the header
-            let header = 'ParticipantID,Age,Gender,Occupation,ShoppingFrequency,MouseUsage,ProductNumber,MouseX,MouseY,MouseTimestamp(ms),ProductResponse,LikertScale,ClickX,ClickY,ClickTimestamp(ms),HoverTime(ms),DwellTime(ms)';
-
-            // Prepare the body
-            let body = '';
-
-            // Iterate over each participant's data
-            data.forEach(participant => {
-                // Iterate over each product
-                participant.mouseMovementData.forEach((productData, productIndex) => {
-                    // Get the length of mouse movement data for this product
-                    const mouseDataLength = productData.length;
-
-                    // Get the length of click data for this product
-                    const clickDataLength = participant.clickData[productIndex] ? participant.clickData[productIndex].length : 0;
-
-                    // Get the hover time data for this product
-                    const hoverTimeData = participant.hoverTimeData[productIndex] || [];
-
-                    // Get the dwell time data for this product
-                    const dwellTimeData = participant.dwellTimeData[productIndex] || [];
-
-                    // Determine the maximum length among mouse movement data, click data, hover time data, and dwell time data
-                    const maxLength = Math.max(mouseDataLength, clickDataLength, hoverTimeData.length, dwellTimeData.length);
-
-                    // Iterate over each data point for the product
-                    for (let i = 0; i < maxLength; i++) {
-                        // Get mouse movement data point
-                        const mousePoint = productData[i] || {};
-
-                        // Get hover time data point
-                        const hoverTime = hoverTimeData[i] !== undefined ? hoverTimeData[i] : '';
-
-                        // Get dwell time data point
-                        const dwellTime = dwellTimeData[i] !== undefined ? dwellTimeData[i] : '';
-
-                        // Append participant info, product details, mouse movement data, click data, product response, Likert scale response, hover time, and dwell time
-                        body += `${participant.participantId},${participant.age},${participant.gender},${participant.occupation},${participant.shoppingFrequency},${participant.mouseUsage},${productIndex + 1},${mousePoint.x || ''},${mousePoint.y || ''},${mousePoint.timestamp || ''},${participant.productResponses[productIndex] || ''},${participant.likertScaleResponses[productIndex] || ''}`;
-
-                        // Check if click data exists for the current product and point index
-                        if (participant.clickData[productIndex] && participant.clickData[productIndex][i]) {
-                            const click = participant.clickData[productIndex][i];
-                            // Append click data
-                            body += `,${click.x || ''},${click.y || ''},${click.timestamp || ''}`;
-                        } else {
-                            // If no click data, append empty values
-                            body += ',,,';
-                        }
-
-                        // Append hover time data
-                        body += `,${hoverTime || ''}`;
-
-                        // Append dwell time data
-                        body += `,${dwellTime || ''}`;
-
-                        body += '\n';
-                    }
-                });
-            });
-
-            // Concatenate header and body
-            const csvData = `${header}\n${body}`;
-            return csvData;
-        }
-
-        // Function to track mouse movement within the product area
-        function trackMouseMovement(event) {
-            // Check if the user is in the studyContent section and has seen the product
-            if (!document.getElementById('studyContent').classList.contains('hidden') && hasSeenProduct) {
-                const coordinates = {
-                    timestamp: Date.now(),
-                    x: event.clientX,
-                    y: event.clientY
-                };
-                // Ensure that the array for mouse movement data is initialized for the current participant and product
-                if (!participantInfo.mouseMovementData[currentIndex]) {
-                    participantInfo.mouseMovementData[currentIndex] = [];
-                }
-                // Store the coordinates in the mouseMovementData array for the current product
-                participantInfo.mouseMovementData[currentIndex].push(coordinates);
-
-                // Update dwell time if dwellStartTime is set
-                if (dwellStartTime) {
-                    const dwellTime = Date.now() - dwellStartTime; // Calculate dwell time
-                    storeDwellTime(dwellTime); // Store dwell time
-                    dwellStartTime = null; // Reset dwell start time
-                }
-            }
-        }
-
-        // Function to track mouse clicks when participant interacts with the product
-        function trackMouseClick(event) {
-            // Check if the user is in the studyContent section and has seen the product
-            if (!document.getElementById('studyContent').classList.contains('hidden') && hasSeenProduct) {
-                const click = {
-                    timestamp: Date.now(),
-                    x: event.clientX,
-                    y: event.clientY,
-                    button: event.button // 0 for left button, 1 for middle button, 2 for right button
-                };
-                // Ensure that the array for click data is initialized for the current participant
-                if (!clickData[currentIndex]) {
-                    clickData[currentIndex] = [];
-                }
-                // Store the click data in the clickData array for the current product
-                clickData[currentIndex].push(click);
-
-                // Update dwell time if dwellStartTime is set
-                if (dwellStartTime) {
-                    const dwellTime = Date.now() - dwellStartTime; // Calculate dwell time
-                    storeDwellTime(dwellTime); // Store dwell time
-                    dwellStartTime = null; // Reset dwell start time
-                }
-            }
-        }
-
-        // Function to store the hover time for the current product
-        function storeHoverTime(hoverTime) {
-            if (!participantInfo.hoverTimeData[currentIndex]) {
-                participantInfo.hoverTimeData[currentIndex] = [];
-            }
-            participantInfo.hoverTimeData[currentIndex].push(hoverTime);
-        }
-
-        // Function to store the dwell time for the current product
-        function storeDwellTime(dwellTime) {
-            if (!participantInfo.dwellTimeData[currentIndex]) {
-                participantInfo.dwellTimeData[currentIndex] = [];
-            }
-            participantInfo.dwellTimeData[currentIndex].push(dwellTime);
-        }
-
-        // Adding event listeners for mouse clicks and mouse movement
-        document.addEventListener('click', trackMouseClick);
-        document.addEventListener('mousemove', trackMouseMovement);
-
-        // Event listener to track when the mouse cursor enters the product area
-        document.getElementById('studyContent').addEventListener('mouseenter', function(event) {
-            hoverStartTime = Date.now(); // Record the start time of hover
-        });
-
-        // Event listener to track when the mouse cursor leaves the product area
-        document.getElementById('studyContent').addEventListener('mouseleave', function(event) {
-            if (hoverStartTime) {
-                const hoverTime = Date.now() - hoverStartTime; // Calculate hover time
-                storeHoverTime(hoverTime); // Store hover time
-                hoverStartTime = null; // Reset hover start time
-            }
-            dwellStartTime = null; // Reset dwell start time
-        });
-
-        // Event listener to track mouse movement within the product area
-        document.getElementById('studyContent').addEventListener('mousemove', function(event) {
-            if (!dwellStartTime) {
-                dwellStartTime = Date.now(); // Start tracking dwell time
-            }
-        });
-
-        // Event listener to track mouse clicks within the product area
-        document.getElementById('studyContent').addEventListener('click', function(event) {
-            if (!dwellStartTime) {
-                dwellStartTime = Date.now(); // Start tracking dwell time
-            }
-        });
-
-        // Event listener to track when the mouse cursor leaves the document
-        document.addEventListener('mouseleave', function(event) {
-            if (hoverStartTime) {
-                const hoverTime = Date.now() - hoverStartTime; // Calculate hover time
-                storeHoverTime(hoverTime); // Store hover time
-                hoverStartTime = null; // Reset hover start time
-            }
-            if (dwellStartTime) {
-                const dwellTime = Date.now() - dwellStartTime; // Calculate dwell time
-                storeDwellTime(dwellTime); // Store dwell time
-                dwellStartTime = null; // Reset dwell start time
-            }
-        });
-
-        // Function to clear all study data
-        function clearStudyData() {
-            localStorage.removeItem('participantsData');
-            participantsData = []; // Reset participantsData array
-            console.log('Study data cleared.');
-        }
-
         // Function to validate the participant information form
         function validateForm() {
-            clearStudyData(); // Uncomment this line to clear existing data before starting a new test
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
             const occupation = document.getElementById('occupation').value;
@@ -612,24 +430,11 @@
 
             if (age && gender && occupation && shoppingFrequency && mouseUsage) {
                 if (mouseUsage === 'no') {
+                    // Reset the radio button for mouse usage
+                    document.querySelector('input[name="mouseUsage"]:checked').checked = false;
                     alert('You cannot participate in the study if you do not currently use a computer mouse or similar pointing device.');
                     return;
                 }
-                // Initialize participantInfo for the current participant
-                participantInfo = {
-                    participantId: generateParticipantId(),
-                    age: age,
-                    gender: gender,
-                    occupation: occupation,
-                    shoppingFrequency: shoppingFrequency,
-                    mouseUsage: mouseUsage,
-                    productResponses: [], // Array to store product responses (yes or no)
-                    likertScaleResponses: [], // Array to store Likert scale responses
-                    mouseMovementData: new Array(productImages.length).fill([]), // Array to store mouse movement data for each product
-                    clickData: new Array(productImages.length).fill([]), // Array to store click data for each product
-                    hoverTimeData: new Array(productImages.length).fill([]), // Array to store hover time data for each product
-                    dwellTimeData: new Array(productImages.length).fill([]) // Array to store dwell time data for each product
-                };
                 document.getElementById('participantInfoPage').classList.add('hidden');
                 document.getElementById('studyContent').classList.remove('hidden');
                 showNextProduct();
@@ -643,16 +448,37 @@
             document.getElementById('participantInfoPage').classList.remove('hidden');
         }
 
+        // Add an event listener to the button to call showParticipantInfo function
+        document.addEventListener('DOMContentLoaded', function() {
+            const continueButton = document.getElementById('continueButton');
+            if (continueButton) {
+                continueButton.addEventListener('click', showParticipantInfo);
+            }
+        });
+
+        // Add an event listener to the button to call validateForm function
+        document.addEventListener('DOMContentLoaded', function() {
+            const startButton = document.getElementById('startButton');
+            if (startButton) {
+                startButton.addEventListener('click', validateForm);
+            }
+        });
+
         // Event listener for the submission of the participant information form
         document.getElementById('participantInfoForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            var age = document.getElementById('age').value;
-            var gender = document.getElementById('gender').value;
-            var occupation = document.getElementById('occupation').value;
-
+            captureFormData('participantInfoForm');
             document.getElementById('participantInfoPage').classList.add('hidden');
             document.getElementById('studyContent').classList.remove('hidden');
             showNextProduct();
+        });
+
+        // Add an event listener to the button to call showPicture function
+        document.addEventListener('DOMContentLoaded', function() {
+            const showPictureButton = document.getElementById('showPictureButton');
+            if (showPictureButton) {
+                showPictureButton.addEventListener('click', showPicture);
+            }
         });
 
         // Function to handle button click (Yes or No)
@@ -661,11 +487,8 @@
                 // Update productResponses array
                 participantInfo.productResponses[currentIndex] = isYes ? 'Yes' : 'No';
 
-                // Clear mouseMovementData array
-                mouseMovementData = [];
-
-                // Clear clickData array for the current product
-                participantInfo.clickData[currentIndex] = [];
+                // Save product responses to Firebase
+                writeProductResponses(userId, participantInfo.productResponses);
 
                 // Show the Likert scale after clicking Yes or No
                 document.getElementById('likertPage').classList.remove('hidden');
@@ -673,17 +496,35 @@
             }
         }
 
+        // Add event listeners for the "Yes" and "No" buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const yesButton = document.querySelector('.button.yes');
+            const noButton = document.querySelector('.button.no');
+            
+            if (yesButton && noButton) {
+                yesButton.addEventListener('click', function() {
+                    handleButtonClick(true);
+                });
+
+                noButton.addEventListener('click', function() {
+                    handleButtonClick(false);
+                });
+            }
+        });
+
         // Function to handle Likert scale submission
         function submitLikertScale() {
             const likertScaleValue = document.querySelector('input[name="likertScale"]:checked');
             if (likertScaleValue) {
                 // Update likertScaleResponses array
                 participantInfo.likertScaleResponses[currentIndex] = likertScaleValue.value;
+
+                // Save Likert scale responses to Firebase
+                writeLikertScaleResponses(userId, participantInfo.likertScaleResponses);
+
                 // Increment currentIndex only once
                 currentIndex = (currentIndex + 1) % productImages.length;
                 if (currentIndex === 0) {
-                    // If Likert scale response is submitted for the last product, store the data
-                    saveStudyData();
                     document.getElementById('likertPage').classList.add('hidden');
                     document.getElementById('debriefingPage').classList.remove('hidden');
                 } else {
@@ -701,6 +542,14 @@
             }
         }
 
+        // Add an event listener for the Likert scale submit button
+        document.addEventListener('DOMContentLoaded', function() {
+            const likertSubmitButton = document.getElementById('likertSubmitButton');
+            if (likertSubmitButton) {
+                likertSubmitButton.addEventListener('click', submitLikertScale);
+            }
+        });
+
         // Get the finishing button
         const finishButton = document.getElementById('finishButton');
 
@@ -712,7 +561,15 @@
             // }
             alert('Thank you for participating! You can now close this window.'); // Prompt user to close the window manually and inform participant that the study is complete
         }
-        
+
+        // Add an event listener for the finish button
+        document.addEventListener('DOMContentLoaded', function() {
+            const finishButton = document.getElementById('finishButton');
+            if (finishButton) {
+                finishButton.addEventListener('click', CloseStudy);
+            }
+        });
+
         const productImages = [
             "product1-kosmetik.jpg",
             "product2-fashion.jpg",
@@ -741,13 +598,6 @@
             hideProductImage();
             enableButtons(false);
             hasSeenProduct = false;
-            
-            // Clear hoverTimeData and dwellTimeData arrays for the current product
-            participantInfo.hoverTimeData[currentIndex] = [];
-            participantInfo.dwellTimeData[currentIndex] = [];
-
-            // Reset mouseMovementData array for each new product interaction
-            participantInfo.mouseMovementData[currentIndex] = []; // Reset the array for the current product
         }
 
         // Function to handle showing the product image and initializing mouseMovementData array
@@ -755,9 +605,6 @@
             const productImg = document.querySelector('.current-product');
             productImg.style.display = 'block';
             hasSeenProduct = true;
-
-            // Initialize mouseMovementData array
-            mouseMovementData = [];
 
             enableButtons(true);
         }
