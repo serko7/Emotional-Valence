@@ -365,14 +365,17 @@
         const userId = `user_${Math.random().toString(36).substring(2, 15)}`;
 
         // Function to write mouse data to Firebase
-        function writeMouseData(userId, eventType, x, y, timeStamp, productIndex) {
-            const mouseDataRef = ref(db, `mouseData/${userId}/${productIndex}`);
+        export function writeMouseData(userId, eventType, x, y, timeStamp, product) {
+            console.log(`Writing data: ${eventType}, product: ${product}`); // Log the data being written
+            if (!product) return; // Prevent writing data if no product is specified
+            const mouseDataRef = ref(db, 'mouseData/' + userId);
             const newDataRef = push(mouseDataRef);
             set(newDataRef, {
                 eventType: eventType,
                 x: x,
                 y: y,
-                timeStamp: timeStamp
+                timeStamp: timeStamp,
+                product: product // Add product information to the mouse data
             });
         }
 
@@ -397,14 +400,17 @@
             mouseListenersAdded = false;
         }
 
+        // Handle mouse movement event
         function handleMouseMove(event) {
             writeMouseData(userId, 'move', event.clientX, event.clientY, Date.now(), currentIndex);
         }
 
+        // Handle mouse click event
         function handleMouseClick(event) {
             writeMouseData(userId, 'click', event.clientX, event.clientY, Date.now(), currentIndex);
         }
 
+        // Handle drag event
         function handleDrag(event) {
             writeMouseData(userId, 'drag', event.clientX, event.clientY, Date.now(), currentIndex);
         }
