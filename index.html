@@ -365,17 +365,16 @@
         const userId = `user_${Math.random().toString(36).substring(2, 15)}`;
 
         // Function to write mouse data to Firebase
-        export function writeMouseData(userId, eventType, x, y, timeStamp, product) {
-            console.log(`Writing data: ${eventType}, product: ${product}`); // Log the data being written
-            if (!product) return; // Prevent writing data if no product is specified
-            const mouseDataRef = ref(db, 'mouseData/' + userId);
+        function writeMouseData(userId, eventType, x, y, timeStamp, productIndex) {
+            const mouseDataRef = ref(db, `mouseData/${userId}/${productIndex}`);
             const newDataRef = push(mouseDataRef);
             set(newDataRef, {
                 eventType: eventType,
                 x: x,
                 y: y,
                 timeStamp: timeStamp,
-                product: product // Add product information to the mouse data
+                product: productIndex, // Add product information to the mouse data
+                user: userId
             });
         }
 
